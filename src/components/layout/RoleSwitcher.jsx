@@ -1,12 +1,22 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ShieldCheck, ChevronUp, ChevronDown } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 export const RoleSwitcher = () => {
   const { role, setRole, showToast } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
   const [expanded, setExpanded] = useState(false);
+
+  // Hide RoleSwitcher on Login and Register pages
+  if (
+    location.pathname.startsWith('/login') ||
+    location.pathname.startsWith('/register') ||
+    location.pathname.startsWith('/auth')
+  ) {
+    return null;
+  }
 
   const roles = [
     { key: 'farmer', label: 'Farmer', homeRoute: '/farmer/dashboard' },

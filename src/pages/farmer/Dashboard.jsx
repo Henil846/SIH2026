@@ -93,26 +93,26 @@ export const FarmerDashboard = () => {
           </div>
         </Card>
 
-        {/* Current Advisory Shortcut */}
+        {/* Crop Certifications & Organic Status Shortcut */}
         <Card
-          title={t('Current Advisory', 'Current Advisory')}
-          icon={Sprout}
+          title={t('Crop Certifications', 'Crop Certifications')}
+          icon={BadgeCheck}
           enableVoice
-          voiceText="Current Advisory: Dry spell expected. Log irrigation for wheat crops in booting stage."
+          voiceText="Crop Certifications: 12.5 acres certified 100% organic under NPOP. Active certificate ORG-IN-2024-8832."
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-            <Badge variant="danger">Urgent Action</Badge>
-            <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>PAU Extension</span>
+            <Badge variant="success">100% Organic (NPOP)</Badge>
+            <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>PSOCA Verified</span>
           </div>
           <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--color-text)', marginBottom: '4px' }}>
-            Irrigation Alert: Dry Spell
+            Wheat & Mustard Certified
           </div>
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', margin: 0 }}>
-            Temperatures &gt;35°C over next 5 days. Deep irrigation recommended.
+            Chemical Residue: <strong>0.00 ppm (Clean)</strong> · QR Traceability Active
           </p>
           <div style={{ marginTop: 'var(--space-3)', display: 'flex', justifyContent: 'flex-end' }}>
-            <Link to="/farmer/advisories" style={{ fontSize: 'var(--text-xs)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              View Advisory <ArrowRight size={12} />
+            <Link to="/farmer/certifications" style={{ fontSize: 'var(--text-xs)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              View All Certificates <ArrowRight size={12} />
             </Link>
           </div>
         </Card>

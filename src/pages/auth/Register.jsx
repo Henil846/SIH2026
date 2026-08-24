@@ -20,7 +20,8 @@ import {
   EyeOff,
   Layers,
   HelpCircle,
-  FileCheck
+  FileCheck,
+  Languages
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../../components/ui/Button';
@@ -63,16 +64,17 @@ export const RegisterPage = () => {
     langCode,
     setLanguage,
     availableLanguages,
+    openTranslator,
     t,
     showToast
   } = useApp();
 
-  const [activeStep, setActiveStep] = useState(1); // Step 1: Account, Step 2: Farm & Soil, Step 3: Crops & Water, Step 4: Preferences & Language
+  const [activeStep, setActiveStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [customCropInput, setCustomCropInput] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Form State containing ALL requested fields
+  // Form State containing ALL 7 requested fields
   const [form, setForm] = useState({
     // Account details
     fullName: 'Ramesh Kumar',
@@ -214,17 +216,34 @@ export const RegisterPage = () => {
         </Link>
 
         <div className="auth-topbar-actions">
+          {/* Quick Open Translator button */}
+          <button
+            type="button"
+            className="language-btn"
+            onClick={() => openTranslator('Welcome to AgriConnect Farmer Registration')}
+            style={{ backgroundColor: '#f0fdf4', borderColor: '#bbf7d0', color: '#15803d' }}
+            title="Open AgriTranslate Tool"
+          >
+            <Languages size={15} />
+            <span>{t('AgriTranslate', 'AgriTranslate')}</span>
+          </button>
+
           <VoiceButton
             textToRead={`AgriConnect Farmer Registration. Step ${activeStep} of 4. Fill in your Location, Land size, Soil information, Crops, Water availability, and Farming preferences.`}
           />
+
           <div className="auth-lang-selector">
             <Globe size={15} />
             <select
               value={langCode}
               onChange={(e) => {
-                setLanguage(e.target.value);
-                const langObj = availableLanguages.find(l => l.code === e.target.value);
-                if (langObj) setForm(prev => ({ ...prev, preferredLanguage: langObj.name }));
+                const newCode = e.target.value;
+                setLanguage(newCode);
+                const langObj = availableLanguages.find(l => l.code === newCode);
+                if (langObj) {
+                  setForm(prev => ({ ...prev, preferredLanguage: langObj.name }));
+                  showToast(`Language switched to ${langObj.native} (${langObj.name})`, 'success');
+                }
               }}
               className="auth-lang-select"
             >
@@ -244,13 +263,13 @@ export const RegisterPage = () => {
           <div className="register-header-left">
             <span className="auth-hero-badge">
               <Sparkles size={14} />
-              Farmer & Agricultural Stewardship Onboarding
+              {t('Farmer & Agricultural Stewardship Onboarding', 'Farmer & Agricultural Stewardship Onboarding')}
             </span>
             <h1 className="register-main-title">
-              Create Your Digital Farm Identity
+              {t('Create Your Digital Farm Identity', 'Create Your Digital Farm Identity')}
             </h1>
             <p className="register-main-sub">
-              Register with complete soil, crop, land, and water profile for personalized AI advisories, subsidy grants, and direct buyer market.
+              {t('Register with complete soil, crop, land, and water profile for personalized AI advisories, subsidy grants, and direct buyer market.', 'Register with complete soil, crop, land, and water profile for personalized AI advisories, subsidy grants, and direct buyer market.')}
             </p>
           </div>
 
@@ -262,7 +281,7 @@ export const RegisterPage = () => {
               onClick={() => setActiveStep(1)}
             >
               <span className="step-circle">{activeStep > 1 ? '✓' : '1'}</span>
-              <span className="step-btn-text">Personal & Role</span>
+              <span className="step-btn-text">{t('Personal & Role', '1. Personal & Role')}</span>
             </button>
 
             <button
@@ -271,7 +290,7 @@ export const RegisterPage = () => {
               onClick={() => setActiveStep(2)}
             >
               <span className="step-circle">{activeStep > 2 ? '✓' : '2'}</span>
-              <span className="step-btn-text">Location & Land</span>
+              <span className="step-btn-text">{t('Location & Land', '2. Location & Land')}</span>
             </button>
 
             <button
@@ -280,7 +299,7 @@ export const RegisterPage = () => {
               onClick={() => setActiveStep(3)}
             >
               <span className="step-circle">{activeStep > 3 ? '✓' : '3'}</span>
-              <span className="step-btn-text">Soil, Crops & Water</span>
+              <span className="step-btn-text">{t('Soil, Crops & Water', '3. Soil, Crops & Water')}</span>
             </button>
 
             <button
@@ -289,7 +308,7 @@ export const RegisterPage = () => {
               onClick={() => setActiveStep(4)}
             >
               <span className="step-circle">4</span>
-              <span className="step-btn-text">Preferences & Review</span>
+              <span className="step-btn-text">{t('Preferences & Review', '4. Preferences & Review')}</span>
             </button>
           </div>
         </div>
@@ -303,8 +322,8 @@ export const RegisterPage = () => {
                   <User size={20} />
                 </div>
                 <div>
-                  <h3>Account Credentials & Role</h3>
-                  <p>Choose your account type and contact credentials</p>
+                  <h3>{t('Account Credentials & Role', 'Account Credentials & Role')}</h3>
+                  <p>{t('Choose your account type and contact credentials', 'Choose your account type and contact credentials')}</p>
                 </div>
               </div>
 
@@ -320,7 +339,7 @@ export const RegisterPage = () => {
                   />
                   <Wheat size={24} className="reg-role-icon" />
                   <div className="reg-role-info">
-                    <span className="reg-role-name">Farmer / Producer</span>
+                    <span className="reg-role-name">{t('Farmer', 'Farmer / Producer')} (किसान)</span>
                     <span className="reg-role-desc">Cultivate crops, request water, access subsidies & sell harvest</span>
                   </div>
                 </label>
@@ -335,7 +354,7 @@ export const RegisterPage = () => {
                   />
                   <Tractor size={24} className="reg-role-icon" />
                   <div className="reg-role-info">
-                    <span className="reg-role-name">Agri Buyer / Trader</span>
+                    <span className="reg-role-name">{t('Buyer', 'Agri Buyer / Trader')} (खरीदार)</span>
                     <span className="reg-role-desc">Procure bulk grains, vegetables, and certified produce directly</span>
                   </div>
                 </label>
@@ -343,7 +362,7 @@ export const RegisterPage = () => {
 
               <div className="grid-2" style={{ marginTop: 'var(--space-4)' }}>
                 <div className="form-group">
-                  <label className="form-label">Full Name / किसान का नाम *</label>
+                  <label className="form-label">{t('Full Name', 'Full Name')} / किसान का नाम *</label>
                   <div className="form-control-wrapper">
                     <span className="input-leading-icon"><User size={16} /></span>
                     <input
@@ -358,7 +377,7 @@ export const RegisterPage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Mobile Number (Primary for SMS/WhatsApp) *</label>
+                  <label className="form-label">{t('Mobile Number', 'Mobile Number (Primary for SMS/WhatsApp)')} *</label>
                   <div className="form-control-wrapper">
                     <span className="input-leading-icon"><Phone size={16} /></span>
                     <input
@@ -376,7 +395,7 @@ export const RegisterPage = () => {
 
               <div className="grid-2">
                 <div className="form-group">
-                  <label className="form-label">Email Address (Optional)</label>
+                  <label className="form-label">{t('Email Address (Optional)', 'Email Address (Optional)')}</label>
                   <input
                     type="email"
                     className="form-input"
@@ -387,7 +406,7 @@ export const RegisterPage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Create Password *</label>
+                  <label className="form-label">{t('Create Password', 'Create Password')} *</label>
                   <div className="form-control-wrapper">
                     <span className="input-leading-icon"><Lock size={16} /></span>
                     <input
@@ -411,7 +430,7 @@ export const RegisterPage = () => {
 
               <div className="reg-nav-footer">
                 <Link to="/login" className="auth-switch-link">
-                  Already have an account? Sign In →
+                  {t('Already have an account? Sign In →', 'Already have an account? Sign In →')}
                 </Link>
                 <Button
                   type="button"
@@ -419,7 +438,7 @@ export const RegisterPage = () => {
                   iconRight={ArrowRight}
                   onClick={() => setActiveStep(2)}
                 >
-                  Continue to Location & Land →
+                  {t('Continue to Location & Land →', 'Continue to Location & Land →')}
                 </Button>
               </div>
             </div>
@@ -433,7 +452,7 @@ export const RegisterPage = () => {
                   <MapPin size={20} />
                 </div>
                 <div>
-                  <h3>1. Location & 2. Land Size Details</h3>
+                  <h3>1. {t('Location', 'Location')} & 2. {t('Land size', 'Land Size Details')}</h3>
                   <p>Used to sync local weather advisories, soil agro-zones, and mandi prices</p>
                 </div>
               </div>
@@ -445,7 +464,7 @@ export const RegisterPage = () => {
                     <Sparkles size={20} color="#15803d" />
                   </div>
                   <div>
-                    <strong>Quick GPS Auto-Detect</strong>
+                    <strong>{t('Quick GPS Auto-Detect', 'Quick GPS Auto-Detect')}</strong>
                     <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
                       Automatically fill State, District, Village & Coordinates from your phone GPS
                     </p>
@@ -458,14 +477,14 @@ export const RegisterPage = () => {
                   onClick={handleGpsDetect}
                   icon={MapPin}
                 >
-                  Detect GPS Location
+                  {t('Detect GPS Location', 'Detect GPS Location')}
                 </Button>
               </div>
 
               {/* Location Fields */}
               <div className="grid-2" style={{ marginTop: 'var(--space-4)' }}>
                 <div className="form-group">
-                  <label className="form-label">State / राज्य *</label>
+                  <label className="form-label">{t('State', 'State')} / राज्य *</label>
                   <select
                     className="form-select"
                     value={form.locationState}
@@ -479,7 +498,7 @@ export const RegisterPage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">District / जिला *</label>
+                  <label className="form-label">{t('District', 'District')} / जिला *</label>
                   <input
                     type="text"
                     className="form-input"
@@ -493,7 +512,7 @@ export const RegisterPage = () => {
 
               <div className="grid-2">
                 <div className="form-group">
-                  <label className="form-label">Village / Tehsil / Gram Panchayat *</label>
+                  <label className="form-label">{t('Village', 'Village / Tehsil / Gram Panchayat')} *</label>
                   <input
                     type="text"
                     className="form-input"
@@ -522,12 +541,12 @@ export const RegisterPage = () => {
               {/* Land Size Fields */}
               <div className="register-subhead">
                 <Ruler size={18} />
-                <span>Cultivable Land Size & Holding</span>
+                <span>2. {t('Land size', 'Cultivable Land Size & Holding')}</span>
               </div>
 
               <div className="grid-2">
                 <div className="form-group">
-                  <label className="form-label">Total Cultivable Area *</label>
+                  <label className="form-label">{t('Total Cultivable Area', 'Total Cultivable Area')} *</label>
                   <div className="form-control-wrapper">
                     <span className="input-leading-icon"><Ruler size={16} /></span>
                     <input
@@ -543,7 +562,7 @@ export const RegisterPage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Area Unit / इकाई *</label>
+                  <label className="form-label">{t('Area Unit', 'Area Unit')} / इकाई *</label>
                   <select
                     className="form-select"
                     value={form.landUnit}
@@ -558,7 +577,7 @@ export const RegisterPage = () => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Land Categorization</label>
+                <label className="form-label">{t('Land Categorization', 'Land Categorization')}</label>
                 <select
                   className="form-select"
                   value={form.landType}
@@ -578,7 +597,7 @@ export const RegisterPage = () => {
                   icon={ArrowLeft}
                   onClick={() => setActiveStep(1)}
                 >
-                  Back
+                  {t('Back', 'Back')}
                 </Button>
                 <Button
                   type="button"
@@ -586,7 +605,7 @@ export const RegisterPage = () => {
                   iconRight={ArrowRight}
                   onClick={() => setActiveStep(3)}
                 >
-                  Continue to Soil, Crops & Water →
+                  {t('Continue to Soil, Crops & Water →', 'Continue to Soil, Crops & Water →')}
                 </Button>
               </div>
             </div>
@@ -600,7 +619,7 @@ export const RegisterPage = () => {
                   <Sprout size={20} />
                 </div>
                 <div>
-                  <h3>3. Soil Information, 4. Crops & 5. Water Availability</h3>
+                  <h3>3. {t('Soil Information', 'Soil Information')}, 4. {t('Crops', 'Crops')} & 5. {t('Water Availability', 'Water Availability')}</h3>
                   <p>Crucial agronomic data for AI diagnosis, crop rotation plans & canal scheduling</p>
                 </div>
               </div>
@@ -608,12 +627,12 @@ export const RegisterPage = () => {
               {/* 3. Soil Information */}
               <div className="register-subhead">
                 <Layers size={18} />
-                <span>3. Soil Information</span>
+                <span>3. {t('Soil Information', 'Soil Information')}</span>
               </div>
 
               <div className="grid-2">
                 <div className="form-group">
-                  <label className="form-label">Primary Soil Type *</label>
+                  <label className="form-label">{t('Primary Soil Type', 'Primary Soil Type')} *</label>
                   <select
                     className="form-select"
                     value={form.soilType}
@@ -627,7 +646,7 @@ export const RegisterPage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Soil Health Card Status</label>
+                  <label className="form-label">{t('Soil Health Card Status', 'Soil Health Card Status')}</label>
                   <select
                     className="form-select"
                     value={form.soilHealthCard}
@@ -642,7 +661,7 @@ export const RegisterPage = () => {
 
               <div className="grid-2">
                 <div className="form-group">
-                  <label className="form-label">Estimated pH Level</label>
+                  <label className="form-label">{t('Estimated pH Level', 'Estimated pH Level')}</label>
                   <select
                     className="form-select"
                     value={form.soilPhLevel}
@@ -656,7 +675,7 @@ export const RegisterPage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Organic Carbon & Fertility</label>
+                  <label className="form-label">{t('Organic Carbon & Fertility', 'Organic Carbon & Fertility')}</label>
                   <select
                     className="form-select"
                     value={form.organicCarbon}
@@ -674,7 +693,7 @@ export const RegisterPage = () => {
               {/* 4. Crops Cultivated */}
               <div className="register-subhead">
                 <Wheat size={18} />
-                <span>4. Crops Cultivated across Seasons (Select all that apply) *</span>
+                <span>4. {t('Crops', 'Crops Cultivated across Seasons (Select all that apply)')} *</span>
               </div>
 
               <div className="crop-selection-cloud">
@@ -724,7 +743,7 @@ export const RegisterPage = () => {
               {/* Selected Crops Summary Pills */}
               <div className="selected-crops-summary">
                 <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--color-text-muted)' }}>
-                  Selected ({form.crops.length}):
+                  {t('Selected', 'Selected')} ({form.crops.length}):
                 </span>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {form.crops.map((cr) => (
@@ -748,12 +767,12 @@ export const RegisterPage = () => {
               {/* 5. Water Availability */}
               <div className="register-subhead">
                 <Droplet size={18} />
-                <span>5. Water Availability & Irrigation Source</span>
+                <span>5. {t('Water availability', 'Water Availability & Irrigation Source')}</span>
               </div>
 
               <div className="grid-2">
                 <div className="form-group">
-                  <label className="form-label">Primary Water Source *</label>
+                  <label className="form-label">{t('Primary Water Source', 'Primary Water Source')} *</label>
                   <select
                     className="form-select"
                     value={form.waterSource}
@@ -768,7 +787,7 @@ export const RegisterPage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Water Reliability & Schedule</label>
+                  <label className="form-label">{t('Water Reliability', 'Water Reliability & Schedule')}</label>
                   <select
                     className="form-select"
                     value={form.waterReliability}
@@ -783,7 +802,7 @@ export const RegisterPage = () => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Irrigation Method</label>
+                <label className="form-label">{t('Irrigation Method', 'Irrigation Method')}</label>
                 <select
                   className="form-select"
                   value={form.irrigationType}
@@ -803,7 +822,7 @@ export const RegisterPage = () => {
                   icon={ArrowLeft}
                   onClick={() => setActiveStep(2)}
                 >
-                  Back
+                  {t('Back', 'Back')}
                 </Button>
                 <Button
                   type="button"
@@ -811,7 +830,7 @@ export const RegisterPage = () => {
                   iconRight={ArrowRight}
                   onClick={() => setActiveStep(4)}
                 >
-                  Continue to Preferences & Review →
+                  {t('Continue to Preferences & Review →', 'Continue to Preferences & Review →')}
                 </Button>
               </div>
             </div>
@@ -825,7 +844,7 @@ export const RegisterPage = () => {
                   <Sliders size={20} />
                 </div>
                 <div>
-                  <h3>6. Farming Preferences & 7. Preferred Language</h3>
+                  <h3>6. {t('Farming Preferences', 'Farming Preferences')} & 7. {t('Preferred Language', 'Preferred Language')}</h3>
                   <p>Configure your agricultural practice, mechanization, and regional dialect</p>
                 </div>
               </div>
@@ -833,12 +852,12 @@ export const RegisterPage = () => {
               {/* 6. Farming Preferences */}
               <div className="register-subhead">
                 <Sliders size={18} />
-                <span>6. Farming Preferences & Practices</span>
+                <span>6. {t('Farming Preferences', 'Farming Preferences & Practices')}</span>
               </div>
 
               <div className="grid-2">
                 <div className="form-group">
-                  <label className="form-label">Farming Method / Practice *</label>
+                  <label className="form-label">{t('Farming Method / Practice', 'Farming Method / Practice')} *</label>
                   <select
                     className="form-select"
                     value={form.farmingPreference}
@@ -852,7 +871,7 @@ export const RegisterPage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Farm Mechanization & Machinery</label>
+                  <label className="form-label">{t('Farm Mechanization', 'Farm Mechanization & Machinery')}</label>
                   <select
                     className="form-select"
                     value={form.mechanizationLevel}
@@ -866,7 +885,7 @@ export const RegisterPage = () => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Primary Market & Harvest Selling Target</label>
+                <label className="form-label">{t('Primary Market', 'Primary Market & Harvest Selling Target')}</label>
                 <select
                   className="form-select"
                   value={form.marketPreference}
@@ -884,7 +903,7 @@ export const RegisterPage = () => {
               {/* 7. Preferred Language */}
               <div className="register-subhead">
                 <Globe size={18} />
-                <span>7. Preferred Regional Language / पसंदीदा भाषा *</span>
+                <span>7. {t('Preferred Language', 'Preferred Regional Language / पसंदीदा भाषा')} *</span>
               </div>
 
               <div className="lang-selection-grid">
@@ -898,6 +917,7 @@ export const RegisterPage = () => {
                       onClick={() => {
                         setForm({ ...form, preferredLanguage: lang.name });
                         setLanguage(lang.code);
+                        showToast(`Language set to ${lang.native} (${lang.name})`, 'info');
                       }}
                     >
                       <span className="lang-card-flag">{lang.flag}</span>
@@ -915,7 +935,7 @@ export const RegisterPage = () => {
               <div className="reg-review-summary-card">
                 <div className="review-summary-title">
                   <FileCheck size={18} color="#15803d" />
-                  <span>Summary of Your Farm Identity</span>
+                  <span>{t('Summary of Your Farm Identity', 'Summary of Your Farm Identity')}</span>
                 </div>
                 <div className="review-items-grid">
                   <div className="review-item">
@@ -960,7 +980,7 @@ export const RegisterPage = () => {
                   icon={ArrowLeft}
                   onClick={() => setActiveStep(3)}
                 >
-                  Back
+                  {t('Back', 'Back')}
                 </Button>
                 <Button
                   type="submit"

@@ -16,7 +16,8 @@ import {
   Building2,
   KeyRound,
   Eye,
-  EyeOff
+  EyeOff,
+  Languages
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../../components/ui/Button';
@@ -30,6 +31,7 @@ export const LoginPage = () => {
     langCode,
     setLanguage,
     availableLanguages,
+    openTranslator,
     t,
     showToast
   } = useApp();
@@ -109,6 +111,17 @@ export const LoginPage = () => {
         </Link>
 
         <div className="auth-topbar-actions">
+          <button
+            type="button"
+            className="language-btn"
+            onClick={() => openTranslator('Welcome to AgriConnect. Sign In with your mobile number')}
+            style={{ backgroundColor: '#f0fdf4', borderColor: '#bbf7d0', color: '#15803d' }}
+            title="Open AgriTranslate Tool"
+          >
+            <Languages size={15} />
+            <span>{t('AgriTranslate', 'AgriTranslate')}</span>
+          </button>
+
           <VoiceButton
             textToRead="Welcome to AgriConnect Login. Enter your mobile number or select a demo role to sign in to your dashboard."
           />
@@ -116,7 +129,11 @@ export const LoginPage = () => {
             <Globe size={15} />
             <select
               value={langCode}
-              onChange={(e) => setLanguage(e.target.value)}
+              onChange={(e) => {
+                setLanguage(e.target.value);
+                const langObj = availableLanguages.find(l => l.code === e.target.value);
+                if (langObj) showToast(`Language switched to ${langObj.native} (${langObj.name})`, 'success');
+              }}
               className="auth-lang-select"
             >
               {availableLanguages.map((l) => (
@@ -228,7 +245,7 @@ export const LoginPage = () => {
             <div className="auth-card">
               <div className="auth-card-header">
                 <h2>{t('Sign In', 'Sign In to AgriConnect')}</h2>
-                <p>Enter your credentials or mobile number to continue</p>
+                <p>{t('Enter your credentials or mobile number to continue', 'Enter your credentials or mobile number to continue')}</p>
               </div>
 
               {/* Role Selection Tabs */}
@@ -239,7 +256,7 @@ export const LoginPage = () => {
                   onClick={() => setSelectedRole('farmer')}
                 >
                   <Wheat size={16} />
-                  <span>Farmer</span>
+                  <span>{t('Farmer', 'Farmer')}</span>
                 </button>
                 <button
                   type="button"
@@ -247,7 +264,7 @@ export const LoginPage = () => {
                   onClick={() => setSelectedRole('buyer')}
                 >
                   <ShoppingBag size={16} />
-                  <span>Buyer</span>
+                  <span>{t('Buyer', 'Buyer')}</span>
                 </button>
                 <button
                   type="button"
@@ -255,7 +272,7 @@ export const LoginPage = () => {
                   onClick={() => setSelectedRole('authority')}
                 >
                   <Building2 size={16} />
-                  <span>Authority</span>
+                  <span>{t('Authority', 'Authority')}</span>
                 </button>
               </div>
 
@@ -287,7 +304,7 @@ export const LoginPage = () => {
                 <form onSubmit={otpSent ? handleLogin : handleSendOtp} className="auth-form">
                   <div className="form-group">
                     <label className="form-label">
-                      <span>Registered Mobile Number</span>
+                      <span>{t('Registered Mobile Number', 'Registered Mobile Number')}</span>
                       <span style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: 600 }}>10 Digits</span>
                     </label>
                     <div className="form-control-wrapper">
@@ -355,7 +372,7 @@ export const LoginPage = () => {
               {authMethod === 'password' && (
                 <form onSubmit={handleLogin} className="auth-form">
                   <div className="form-group">
-                    <label className="form-label">Mobile Number or Email</label>
+                    <label className="form-label">{t('Mobile Number or Email', 'Mobile Number or Email')}</label>
                     <div className="form-control-wrapper">
                       <span className="input-leading-icon">
                         <Phone size={16} />
@@ -373,7 +390,7 @@ export const LoginPage = () => {
 
                   <div className="form-group">
                     <div className="flex-between" style={{ marginBottom: '4px' }}>
-                      <label className="form-label" style={{ margin: 0 }}>Password</label>
+                      <label className="form-label" style={{ margin: 0 }}>{t('Password', 'Password')}</label>
                       <button
                         type="button"
                         className="auth-forgot-link"

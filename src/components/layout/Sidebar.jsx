@@ -65,12 +65,12 @@ export const Sidebar = ({ collapsed = false }) => {
           { name: 'Dashboard', path: '/farmer/dashboard', icon: LayoutDashboard },
           { name: 'My Farm', path: '/farmer/profile', icon: MapPinned },
           { name: 'Crop Intelligence', path: '/farmer/intelligence', icon: Sprout },
+          { name: 'Crop Certifications', path: '/farmer/certifications', icon: BadgeCheck },
           { name: 'Market Prices', path: '/farmer/market', icon: TrendingUp },
           { name: 'Schemes', path: '/farmer/schemes', icon: FileText },
           { name: 'Water', path: '/farmer/water', icon: Droplet },
           { name: 'Marketplace', path: '/farmer/marketplace', icon: ShoppingCart },
           { name: 'Agriculture News', path: '/farmer/news', icon: Newspaper },
-          { name: 'Advisories', path: '/farmer/advisories', icon: ClipboardList },
           { name: 'Alerts', path: '/farmer/alerts', icon: AlertTriangle }
         ];
     }

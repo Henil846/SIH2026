@@ -19,9 +19,8 @@ import { FarmerProfile } from './pages/farmer/Profile';
 import { FarmerMarketplace } from './pages/farmer/Marketplace';
 import { ProductDetail } from './pages/farmer/ProductDetail';
 import { SellProduct } from './pages/farmer/SellProduct';
-import { CertificationRequest } from './pages/farmer/CertificationRequest';
+import { FarmerCertifications } from './pages/farmer/Certifications';
 import { FarmerNews } from './pages/farmer/News';
-import { FarmerAdvisories } from './pages/farmer/Advisories';
 import { FarmerAlerts } from './pages/farmer/Alerts';
 import { CropIntelligence } from './pages/farmer/CropIntelligence';
 import { MarketPrices } from './pages/farmer/MarketPrices';
@@ -123,7 +122,11 @@ export const router = createBrowserRouter([
       },
       {
         path: '/farmer/certification',
-        element: <CertificationRequest />
+        element: <FarmerCertifications />
+      },
+      {
+        path: '/farmer/certifications',
+        element: <FarmerCertifications />
       },
       {
         path: '/farmer/news',
@@ -131,7 +134,7 @@ export const router = createBrowserRouter([
       },
       {
         path: '/farmer/advisories',
-        element: <FarmerAdvisories />
+        element: <Navigate to="/farmer/certifications" replace />
       },
       {
         path: '/farmer/alerts',

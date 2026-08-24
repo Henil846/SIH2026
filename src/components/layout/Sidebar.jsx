@@ -15,12 +15,22 @@ import {
   User,
   BadgeCheck,
   History,
-  Languages
+  Languages,
+  X,
+  LogIn,
+  UserPlus
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 export const Sidebar = ({ collapsed = false }) => {
-  const { role, farmer, t, openTranslator } = useApp();
+  const {
+    role,
+    farmer,
+    t,
+    openTranslator,
+    isMobileMenuOpen,
+    closeMobileMenu
+  } = useApp();
   const location = useLocation();
 
   const getNavItems = () => {
@@ -68,76 +78,134 @@ export const Sidebar = ({ collapsed = false }) => {
 
   const navItems = getNavItems();
 
+  const handleNavClick = () => {
+    closeMobileMenu();
+  };
+
   return (
-    <aside className={`sidebar ${collapsed ? 'is-collapsed' : ''}`}>
-      <div>
-        <Link to="/" className="sidebar-brand">
-          <div className="sidebar-brand-icon">
-            <Tractor size={20} strokeWidth={2} />
+    <>
+      {/* Mobile Drawer Backdrop */}
+      {isMobileMenuOpen && (
+        <div
+          className="sidebar-backdrop is-visible"
+          onClick={closeMobileMenu}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside className={`sidebar ${collapsed ? 'is-collapsed' : ''} ${isMobileMenuOpen ? 'is-mobile-open' : ''}`}>
+        <div>
+          <div className="sidebar-brand-wrapper">
+            <Link to="/" className="sidebar-brand" onClick={handleNavClick}>
+              <div className="sidebar-brand-icon">
+                <Tractor size={20} strokeWidth={2} />
+              </div>
+              {!collapsed && (
+                <div className="sidebar-brand-text">
+                  <span className="sidebar-brand-title">
+                    AgriConnect
+                  </span>
+                  <span className="sidebar-brand-sub">Digital Stewardship</span>
+                </div>
+              )}
+            </Link>
+
+            {/* Mobile Close Button */}
+            <button
+              type="button"
+              className="sidebar-mobile-close-btn"
+              onClick={closeMobileMenu}
+              aria-label="Close navigation menu"
+            >
+              <X size={20} />
+            </button>
           </div>
-          {!collapsed && (
-            <div className="sidebar-brand-text">
-              <span className="sidebar-brand-title">
-                AgriConnect
-              </span>
-              <span className="sidebar-brand-sub">Digital Stewardship</span>
-            </div>
-          )}
-        </Link>
 
-        <nav className="sidebar-nav" aria-label="Main Navigation">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isItemActive = location.pathname.startsWith(item.path);
-            const translatedName = t(item.name, item.name);
+          <nav className="sidebar-nav" aria-label="Main Navigation">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isItemActive = location.pathname.startsWith(item.path);
+              const translatedName = t(item.name, item.name);
 
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  `sidebar-nav-item ${isActive || isItemActive ? 'is-active' : ''}`
-                }
-                title={translatedName}
-              >
-                <Icon size={18} />
-                {!collapsed && <span>{translatedName}</span>}
-              </NavLink>
-            );
-          })}
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `sidebar-nav-item ${isActive || isItemActive ? 'is-active' : ''}`
+                  }
+                  title={translatedName}
+                  onClick={handleNavClick}
+                >
+                  <Icon size={18} />
+                  {!collapsed && <span>{translatedName}</span>}
+                </NavLink>
+              );
+            })}
 
-          {/* Quick Translator Action in Sidebar */}
-          <button
-            type="button"
-            className="sidebar-nav-item"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              width: '100%',
-              textAlign: 'left',
-              cursor: 'pointer'
-            }}
-            onClick={() => openTranslator('')}
-            title={t('AgriTranslate', 'AgriTranslate')}
+            {/* Quick Translator Action in Sidebar */}
+            <button
+              type="button"
+              className="sidebar-nav-item"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer'
+              }}
+              onClick={() => {
+                handleNavClick();
+                openTranslator('');
+              }}
+              title={t('AgriTranslate', 'AgriTranslate')}
+            >
+              <Languages size={18} color="var(--color-primary)" />
+              {!collapsed && <span>{t('AgriTranslate', 'AgriTranslate')}</span>}
+            </button>
+          </nav>
+        </div>
+
+        <div className="sidebar-footer-nav">
+          <NavLink
+            to="/farmer/profile"
+            className={({ isActive }) =>
+              `sidebar-nav-item ${isActive ? 'is-active' : ''}`
+            }
+            title={farmer.name || t('Profile', 'Profile')}
+            onClick={handleNavClick}
           >
-            <Languages size={18} color="var(--color-primary)" />
-            {!collapsed && <span>{t('AgriTranslate', 'AgriTranslate')}</span>}
-          </button>
-        </nav>
-      </div>
+            <User size={18} />
+            {!collapsed && <span>{t('Profile', 'Profile')}</span>}
+          </NavLink>
 
-      <div className="sidebar-footer-nav">
-        <NavLink
-          to="/farmer/profile"
-          className={({ isActive }) =>
-            `sidebar-nav-item ${isActive ? 'is-active' : ''}`
-          }
-          title={farmer.name || t('Profile', 'Profile')}
-        >
-          <User size={18} />
-          {!collapsed && <span>{t('Profile', 'Profile')}</span>}
-        </NavLink>
-      </div>
-    </aside>
+          {/* Quick Auth Links */}
+          <NavLink
+            to="/login"
+            className={({ isActive }) =>
+              `sidebar-nav-item auth-nav-link ${isActive ? 'is-active' : ''}`
+            }
+            title="Sign In"
+            onClick={handleNavClick}
+          >
+            <LogIn size={18} />
+            {!collapsed && <span>Sign In / Login</span>}
+          </NavLink>
+
+          <NavLink
+            to="/register"
+            className={({ isActive }) =>
+              `sidebar-nav-item auth-nav-link ${isActive ? 'is-active' : ''}`
+            }
+            title="Register Farm"
+            onClick={handleNavClick}
+          >
+            <UserPlus size={18} />
+            {!collapsed && <span>Register Farm</span>}
+          </NavLink>
+        </div>
+      </aside>
+    </>
   );
 };
+

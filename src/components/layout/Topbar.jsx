@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Globe, Bell, Languages, ChevronDown, Check } from 'lucide-react';
+import { Globe, Bell, Languages, ChevronDown, Check, Menu, LogIn } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Avatar } from '../ui/Avatar';
 
@@ -14,7 +14,10 @@ export const Topbar = ({ title, simplified = false, showAvatar = true }) => {
     t,
     alerts,
     farmer,
-    showToast
+    showToast,
+    toggleMobileMenu,
+    isAuthenticated,
+    currentUser
   } = useApp();
 
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
@@ -44,6 +47,17 @@ export const Topbar = ({ title, simplified = false, showAvatar = true }) => {
   return (
     <header className="topbar">
       <div className="topbar-left">
+        {/* Mobile Hamburger Menu Toggle Button */}
+        <button
+          type="button"
+          className="mobile-menu-toggle-btn"
+          onClick={toggleMobileMenu}
+          aria-label="Open Navigation Menu"
+          title="Open Menu"
+        >
+          <Menu size={20} />
+        </button>
+
         {title && <h2 className="topbar-title">{t(title, title)}</h2>}
       </div>
 

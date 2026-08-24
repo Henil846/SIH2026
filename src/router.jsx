@@ -6,6 +6,10 @@ import { RoleSwitcher } from './components/layout/RoleSwitcher';
 import { Toast } from './components/layout/Toast';
 import { AgriTranslateModal } from './components/ui/AgriTranslateModal';
 
+// Auth Pages
+import { LoginPage } from './pages/auth/Login';
+import { RegisterPage } from './pages/auth/Register';
+
 // Onboarding
 import { OnboardingWizard } from './pages/onboarding/OnboardingWizard';
 
@@ -66,6 +70,24 @@ export const router = createBrowserRouter([
       {
         path: '/dashboard',
         element: <Navigate to="/farmer/dashboard" replace />
+      },
+
+      // Auth Routes
+      {
+        path: '/login',
+        element: <LoginPage />
+      },
+      {
+        path: '/auth/login',
+        element: <LoginPage />
+      },
+      {
+        path: '/register',
+        element: <RegisterPage />
+      },
+      {
+        path: '/auth/register',
+        element: <RegisterPage />
       },
 
       // Onboarding Wizard

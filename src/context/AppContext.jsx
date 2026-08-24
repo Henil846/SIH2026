@@ -19,6 +19,21 @@ export const AppProvider = ({ children }) => {
   // Current active role: 'farmer' | 'buyer' | 'authority' | 'admin'
   const [role, setRole] = useState('farmer');
   
+  // Mobile Sidebar Drawer State
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const toggleMobileMenu = useCallback(() => setIsMobileMenuOpen(prev => !prev), []);
+  const closeMobileMenu = useCallback(() => setIsMobileMenuOpen(false), []);
+
+  // Auth state
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [currentUser, setCurrentUser] = useState({
+    name: 'Ramesh Kumar',
+    phone: '+91 98765 43210',
+    email: 'ramesh.kumar@agriconnect.in',
+    role: 'farmer',
+    location: 'Village Pratappur, Ludhiana, Punjab'
+  });
+
   // Current language code: 'en' | 'hi' | 'pa' | 'mr' | 'te' | 'ta' | 'bn' | 'gu' | 'kn'
   const [langCode, setLangCode] = useState('en');
 
@@ -341,11 +356,129 @@ export const AppProvider = ({ children }) => {
     return newOrder;
   }, [showToast]);
 
+  // Auth handlers
+  const loginUser = useCallback(({ identifier, password, role: loginRole, rememberMe }) => {
+    const targetRole = loginRole || 'farmer';
+    setRole(targetRole);
+    setIsAuthenticated(true);
+
+    let userObj = {
+      name: 'Ramesh Kumar',
+      phone: identifier.includes('@') ? '+91 98765 43210' : identifier,
+      email: identifier.includes('@') ? identifier : 'farmer.ramesh@agriconnect.in',
+      role: targetRole,
+      location: 'Village Pratappur, Ludhiana, Punjab'
+    };
+
+    if (targetRole === 'buyer') {
+      userObj = {
+        name: 'AgriCorp Traders',
+        phone: '+91 98765 22334',
+        email: 'procurement@agricorp.in',
+        role: 'buyer',
+        location: 'New Delhi Wholesale Mandi'
+      };
+    } else if (targetRole === 'authority') {
+      userObj = {
+        name: 'Dr. Harvinder Singh',
+        phone: '+91 98765 99881',
+        email: 'officer.ludhiana@agri.gov.in',
+        role: 'authority',
+        location: 'District Agriculture Office, Ludhiana'
+      };
+    } else if (targetRole === 'admin') {
+      userObj = {
+        name: 'Suresh Singh (Admin)',
+        phone: '+91 99887 76655',
+        email: 'admin@agriconnect.in',
+        role: 'admin',
+        location: 'State HQ Chandigarh'
+      };
+    }
+
+    setCurrentUser(userObj);
+    showToast(`Welcome back, ${userObj.name}! Logged in as ${targetRole.toUpperCase()}`, 'success');
+    return userObj;
+  }, [showToast]);
+
+  const registerUser = useCallback((regData) => {
+    const {
+      name,
+      phone,
+      email,
+      password,
+      role: regRole = 'farmer',
+      // Requested fields
+      location = {},
+      landSize = '5.0',
+      soilInformation = 'Alluvial Loam',
+      crops = ['Wheat', 'Paddy'],
+      waterAvailability = 'Canal & Borewell',
+      farmingPreferences = 'Mixed Organic & Modern',
+      preferredLanguage = 'English'
+    } = regData;
+
+    setRole(regRole);
+    setIsAuthenticated(true);
+    setLanguage(preferredLanguage);
+
+    const newUser = {
+      name: name || 'New Agricultural Producer',
+      phone: phone || '+91 98765 00000',
+      email: email || 'farmer@agriconnect.in',
+      role: regRole,
+      location: location.village ? `${location.village}, ${location.district || ''}, ${location.state || ''}` : (location.state || 'Punjab')
+    };
+    setCurrentUser(newUser);
+
+    if (regRole === 'farmer') {
+      setFarmer(prev => ({
+        ...prev,
+        name: newUser.name,
+        phone: newUser.phone,
+        village: location.village || 'Village Pratappur',
+        district: location.district || 'Ludhiana',
+        state: location.state || 'Punjab',
+        preferredLanguage,
+        landParcels: [
+          {
+            id: `parcel-${Date.now()}`,
+            name: `${location.village || 'Main'} Field`,
+            khasraNumber: '101/A',
+            acres: parseFloat(landSize) || 5.0,
+            currentCrop: crops[0] || 'Wheat',
+            soilType: soilInformation,
+            status: 'VERIFIED',
+            verifiedBy: 'Self-Registered (AgriConnect GPS)',
+            lastUpdated: 'Just now'
+          }
+        ]
+      }));
+    }
+
+    showToast(`Registration completed! Welcome to AgriConnect, ${newUser.name}.`, 'success');
+    return newUser;
+  }, [setLanguage, showToast]);
+
+  const logoutUser = useCallback(() => {
+    setIsAuthenticated(false);
+    showToast('You have been logged out safely.', 'info');
+  }, [showToast]);
+
   return (
     <AppContext.Provider
       value={{
         role,
         setRole,
+        isMobileMenuOpen,
+        setIsMobileMenuOpen,
+        toggleMobileMenu,
+        closeMobileMenu,
+        isAuthenticated,
+        currentUser,
+        loginUser,
+        registerUser,
+        logoutUser,
         language: currentLanguage.name,
         langCode,
         currentLanguage,

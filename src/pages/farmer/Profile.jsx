@@ -24,13 +24,13 @@ import { VoiceButton } from '../../components/ui/VoiceButton';
 import { useApp } from '../../context/AppContext';
 
 export const FarmerProfile = () => {
-  const { farmer, setFarmer, updateFarmerPreferences, addLandParcel, showToast } = useApp();
+  const { farmer, setFarmer, updateFarmerPreferences, addLandParcel, showToast, t } = useApp();
 
   const [selectedLanguage, setSelectedLanguage] = useState(farmer.preferredLanguage || 'English');
   const [notifications, setNotifications] = useState({
-    weatherAlerts: farmer.notifications.weatherAlerts,
-    marketPriceUpdates: farmer.notifications.marketPriceUpdates,
-    schemeRecommendations: farmer.notifications.schemeRecommendations
+    weatherAlerts: farmer.notifications?.weatherAlerts ?? true,
+    marketPriceUpdates: farmer.notifications?.marketPriceUpdates ?? false,
+    schemeRecommendations: farmer.notifications?.schemeRecommendations ?? true
   });
 
   const [isAddingLand, setIsAddingLand] = useState(false);
@@ -89,7 +89,7 @@ export const FarmerProfile = () => {
   };
 
   return (
-    <PageShell sidebarCollapsed={true} contentMaxWidth="760px">
+    <PageShell title={t ? t('My Farm', 'My Farm') : 'My Farm'} contentMaxWidth="880px">
       {/* Profile Header Block */}
       <div style={{
         backgroundColor: 'var(--color-surface)',
@@ -105,11 +105,19 @@ export const FarmerProfile = () => {
         gap: 'var(--space-4)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-          <Avatar
-            src={farmer.avatarUrl}
-            name={farmer.name}
-            size="lg"
-          />
+          <div style={{ position: 'relative' }}>
+            <Avatar
+              src={farmer.avatarUrl || '/farmer.png'}
+              name={farmer.name}
+              size="lg"
+              style={{
+                width: '64px',
+                height: '64px',
+                border: '2px solid var(--color-primary)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+              }}
+            />
+          </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>{farmer.name}</h2>

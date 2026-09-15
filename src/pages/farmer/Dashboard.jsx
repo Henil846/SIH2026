@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Sun,
@@ -11,7 +11,8 @@ import {
   ArrowRight,
   ShieldCheck,
   MapPinned,
-  ChevronRight
+  ChevronRight,
+  BadgeCheck
 } from 'lucide-react';
 import { PageShell } from '../../components/layout/PageShell';
 import { Card } from '../../components/ui/Card';
@@ -21,7 +22,14 @@ import { VoiceButton } from '../../components/ui/VoiceButton';
 import { useApp } from '../../context/AppContext';
 
 export const FarmerDashboard = () => {
-  const { farmer, alerts, advisories, showToast, t } = useApp();
+  const { farmer, alerts, advisories, showToast, t, weather, refreshWeather } = useApp();
+  const [locationInput, setLocationInput] = useState('');
+
+  const handleLocationSearch = (e) => {
+    e.preventDefault();
+    if (!locationInput.trim()) return;
+    refreshWeather(locationInput.trim());
+  };
   const navigate = useNavigate();
 
   return (
@@ -79,17 +87,49 @@ export const FarmerDashboard = () => {
           title={t('Agro-Climatic Weather', 'Agro-Climatic Weather')}
           icon={Sun}
           enableVoice
-          voiceText="Weather overview: Sunny and dry, 29°C. Soil moisture 42%. Next rain forecasted in 5 days."
+          voiceText={`Weather overview: ${weather?.current?.condition || 'Sunny and dry'}, ${weather?.current?.tempC ?? 29}°C.`}
         >
           <div className="flex-between" style={{ marginBottom: 'var(--space-3)' }}>
             <div>
-              <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--color-text)' }}>29°C</div>
-              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>Sunny & Clear · 42% Moisture</div>
+              <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--color-text)' }}>{weather?.current?.tempC ?? 29}°C</div>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
+                {weather?.current?.condition || 'Sunny & Clear'} · {weather?.current?.humidity ?? 42}% Humidity
+              </div>
             </div>
             <Sun size={38} color="#E5A93B" />
           </div>
+          <form onSubmit={handleLocationSearch} style={{ display: 'flex', gap: '6px', marginBottom: 'var(--space-2)' }}>
+            <input
+              type="text"
+              value={locationInput}
+              onChange={(e) => setLocationInput(e.target.value)}
+              placeholder="Change city (e.g. Jaipur, Rajasthan)"
+              style={{
+                flex: 1,
+                fontSize: '11px',
+                padding: '6px 8px',
+                border: '1px solid var(--color-border)',
+                borderRadius: '6px'
+              }}
+            />
+            <button
+              type="submit"
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                padding: '6px 10px',
+                border: '1px solid var(--color-primary)',
+                borderRadius: '6px',
+                background: 'var(--color-primary)',
+                color: '#fff',
+                cursor: 'pointer'
+              }}
+            >
+              Go
+            </button>
+          </form>
           <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', borderTop: '1px solid var(--color-border)', paddingTop: '8px' }}>
-            Last updated: 10 mins ago (IMD Agromet)
+            {weather?.source ? `Source: ${weather.source}` : 'Last updated: 10 mins ago (IMD Agromet)'}
           </div>
         </Card>
 

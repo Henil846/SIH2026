@@ -8,11 +8,14 @@ export default defineConfig({
     target: 'esnext',
     outDir: 'dist',
     sourcemap: false,
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 800,
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
+            if (id.includes('firebase')) {
+              return 'vendor-firebase';
+            }
             if (id.includes('react-router-dom')) {
               return 'vendor-router';
             }
@@ -29,4 +32,3 @@ export default defineConfig({
     }
   }
 })
-

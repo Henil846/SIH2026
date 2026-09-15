@@ -18,7 +18,8 @@ import {
   Languages,
   X,
   LogIn,
-  UserPlus
+  UserPlus,
+  LogOut
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
@@ -26,6 +27,9 @@ export const Sidebar = ({ collapsed = false }) => {
   const {
     role,
     farmer,
+    currentUser,
+    isAuthenticated,
+    logoutUser,
     t,
     openTranslator,
     isMobileMenuOpen,
@@ -82,6 +86,22 @@ export const Sidebar = ({ collapsed = false }) => {
     closeMobileMenu();
   };
 
+  const getProfileRoute = () => {
+    switch (role) {
+      case 'buyer':
+        return '/buyer/marketplace';
+      case 'authority':
+        return '/authority/dashboard';
+      case 'admin':
+        return '/admin/users';
+      case 'farmer':
+      default:
+        return '/farmer/profile';
+    }
+  };
+
+  const displayName = currentUser?.name || (role === 'farmer' ? farmer.name : `${role.toUpperCase()} Account`);
+
   return (
     <>
       {/* Mobile Drawer Backdrop */}
@@ -124,7 +144,7 @@ export const Sidebar = ({ collapsed = false }) => {
           <nav className="sidebar-nav" aria-label="Main Navigation">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isItemActive = location.pathname.startsWith(item.path);
+              const isItemActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(`${item.path}/`));
               const translatedName = t(item.name, item.name);
 
               return (
@@ -168,41 +188,66 @@ export const Sidebar = ({ collapsed = false }) => {
 
         <div className="sidebar-footer-nav">
           <NavLink
-            to="/farmer/profile"
+            to={getProfileRoute()}
             className={({ isActive }) =>
               `sidebar-nav-item ${isActive ? 'is-active' : ''}`
             }
-            title={farmer.name || t('Profile', 'Profile')}
+            title={displayName}
             onClick={handleNavClick}
           >
             <User size={18} />
-            {!collapsed && <span>{t('Profile', 'Profile')}</span>}
+            {!collapsed && <span>{displayName.length > 18 ? displayName.slice(0, 16) + '...' : displayName}</span>}
           </NavLink>
 
-          {/* Quick Auth Links */}
-          <NavLink
-            to="/login"
-            className={({ isActive }) =>
-              `sidebar-nav-item auth-nav-link ${isActive ? 'is-active' : ''}`
-            }
-            title="Sign In"
-            onClick={handleNavClick}
-          >
-            <LogIn size={18} />
-            {!collapsed && <span>Sign In / Login</span>}
-          </NavLink>
+          {/* Sign Out Button */}
+          {isAuthenticated ? (
+            <button
+              type="button"
+              className="sidebar-nav-item"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer',
+                color: '#DC2626'
+              }}
+              onClick={() => {
+                handleNavClick();
+                logoutUser();
+              }}
+              title="Sign Out"
+            >
+              <LogOut size={18} />
+              {!collapsed && <span>{t('Sign Out', 'Sign Out')}</span>}
+            </button>
+          ) : (
+            <>
+              <NavLink
+                to="/login"
+                className={({ isActive }) =>
+                  `sidebar-nav-item auth-nav-link ${isActive ? 'is-active' : ''}`
+                }
+                title="Sign In"
+                onClick={handleNavClick}
+              >
+                <LogIn size={18} />
+                {!collapsed && <span>Sign In / Login</span>}
+              </NavLink>
 
-          <NavLink
-            to="/register"
-            className={({ isActive }) =>
-              `sidebar-nav-item auth-nav-link ${isActive ? 'is-active' : ''}`
-            }
-            title="Register Farm"
-            onClick={handleNavClick}
-          >
-            <UserPlus size={18} />
-            {!collapsed && <span>Register Farm</span>}
-          </NavLink>
+              <NavLink
+                to="/register"
+                className={({ isActive }) =>
+                  `sidebar-nav-item auth-nav-link ${isActive ? 'is-active' : ''}`
+                }
+                title="Register"
+                onClick={handleNavClick}
+              >
+                <UserPlus size={18} />
+                {!collapsed && <span>Register</span>}
+              </NavLink>
+            </>
+          )}
         </div>
       </aside>
     </>

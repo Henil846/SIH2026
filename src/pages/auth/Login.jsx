@@ -22,6 +22,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { Button } from '../../components/ui/Button';
 import { VoiceButton } from '../../components/ui/VoiceButton';
+import { auth, signInWithEmailAndPassword, sendPasswordResetEmail } from '../../services/firebase';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
@@ -36,9 +37,9 @@ export const LoginPage = () => {
     showToast
   } = useApp();
 
-  const [authMethod, setAuthMethod] = useState('otp'); // 'otp' | 'password'
-  const [identifier, setIdentifier] = useState('9876543210');
-  const [password, setPassword] = useState('••••••••');
+  const [authMethod, setAuthMethod] = useState('password'); // 'password' | 'otp'
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [selectedRole, setSelectedRole] = useState('farmer');
@@ -60,8 +61,77 @@ export const LoginPage = () => {
     }, 600);
   };
 
-  const handleLogin = (e) => {
+  const handleForgotPassword = async () => {
+    if (!identifier) {
+      showToast('Please enter your email or phone above first', 'warning');
+      return;
+    }
+    const emailToReset = identifier.includes('@') ? identifier.trim() : `${identifier.trim()}@agriconnect.in`;
+    try {
+      await sendPasswordResetEmail(auth, emailToReset);
+      showToast(`Password reset email sent to ${emailToReset}! Check your inbox.`, 'success');
+    } catch (err) {
+      if (err.code === 'auth/user-not-found') {
+        showToast('No registered user found with this email.', 'error');
+      } else {
+        showToast(err.message || 'Could not send reset email.', 'error');
+      }
+    }
+  };
+
+  const handleLogin = async (e) => {
     e?.preventDefault();
+    
+    if (authMethod === 'password') {
+      if (!identifier.trim()) {
+        showToast('Please enter your email or mobile number.', 'error');
+        return;
+      }
+      if (!password) {
+        showToast('Please enter your password.', 'error');
+        return;
+      }
+
+      setLoading(true);
+      const emailToAuth = identifier.includes('@') ? identifier.trim() : `${identifier.replace(/\D/g, '')}@agriconnect.in`;
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, emailToAuth, password);
+        const fbUser = userCredential.user;
+        
+        loginUser({
+          identifier: fbUser.email || identifier,
+          name: fbUser.displayName || identifier,
+          role: selectedRole,
+          uid: fbUser.uid
+        });
+
+        showToast(`Welcome back! Successfully authenticated.`, 'success');
+        if (selectedRole === 'farmer') navigate('/farmer/dashboard');
+        else if (selectedRole === 'buyer') navigate('/buyer/marketplace');
+        else if (selectedRole === 'authority') navigate('/authority/dashboard');
+        else if (selectedRole === 'admin') navigate('/admin/dashboard');
+      } catch (err) {
+        console.error('Firebase Auth Error:', err);
+        if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+          showToast('Incorrect password. Please verify and try again.', 'error');
+        } else if (err.code === 'auth/user-not-found') {
+          showToast('No user found with this account. Please register first.', 'error');
+        } else if (err.code === 'auth/invalid-email') {
+          showToast('Please enter a valid email address.', 'error');
+        } else if (err.code === 'auth/too-many-requests') {
+          showToast('Too many failed attempts. Please try again later or reset password.', 'error');
+        } else {
+          // Fallback if demo or network error
+          showToast(err.message || 'Authentication failed. Please check credentials.', 'error');
+        }
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // OTP Flow
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
@@ -274,6 +344,14 @@ export const LoginPage = () => {
                   <Building2 size={16} />
                   <span>{t('Authority', 'Authority')}</span>
                 </button>
+                <button
+                  type="button"
+                  className={`auth-role-tab ${selectedRole === 'admin' ? 'is-active' : ''}`}
+                  onClick={() => setSelectedRole('admin')}
+                >
+                  <ShieldCheck size={16} />
+                  <span>{t('Admin', 'Admin')}</span>
+                </button>
               </div>
 
               {/* Login Method Toggle: OTP vs Password */}
@@ -394,7 +472,8 @@ export const LoginPage = () => {
                       <button
                         type="button"
                         className="auth-forgot-link"
-                        onClick={() => showToast('Reset link sent to your registered mobile number', 'info')}
+                        onClick={handleForgotPassword}
+                        title="Send password reset link"
                       >
                         Forgot?
                       </button>

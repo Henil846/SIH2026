@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import { api } from '../services/api';
 import { initialFarmerData } from '../data/mockFarmer';
 import { initialProducts } from '../data/mockProducts';
 import { initialCertifications } from '../data/mockCertifications';
@@ -12,27 +13,72 @@ import { initialSchemes } from '../data/mockSchemes';
 import { initialWaterRequests } from '../data/mockWaterRequests';
 import { LANGUAGES, TRANSLATIONS, AGRI_GLOSSARY } from '../data/translations';
 import { translateText, playTextSpeech, stopTextSpeech, getStaticTranslation } from '../services/translator';
+import { auth, onAuthStateChanged, signOut } from '../services/firebase';
 
 const AppContext = createContext(null);
 
 export const AppProvider = ({ children }) => {
+  // Saved current user state
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('agri_currentUser');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
   // Current active role: 'farmer' | 'buyer' | 'authority' | 'admin'
-  const [role, setRole] = useState('farmer');
+  const [role, setRole] = useState(() => {
+    try {
+      const savedRole = localStorage.getItem('agri_role');
+      if (savedRole) return savedRole;
+      const saved = localStorage.getItem('agri_currentUser');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.role) return parsed.role;
+      }
+      return 'farmer';
+    } catch {
+      return 'farmer';
+    }
+  });
   
   // Mobile Sidebar Drawer State
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const toggleMobileMenu = useCallback(() => setIsMobileMenuOpen(prev => !prev), []);
   const closeMobileMenu = useCallback(() => setIsMobileMenuOpen(false), []);
 
-  // Auth state
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
-  const [currentUser, setCurrentUser] = useState({
-    name: 'Ramesh Kumar',
-    phone: '+91 98765 43210',
-    email: 'ramesh.kumar@agriconnect.in',
-    role: 'farmer',
-    location: 'Village Pratappur, Ludhiana, Punjab'
+  // Auth state — persisted to localStorage
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    try {
+      return localStorage.getItem('agri_isAuthenticated') === 'true';
+    } catch {
+      return false;
+    }
   });
+
+  // Sync Firebase authentication state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
+      if (fbUser) {
+        setIsAuthenticated(true);
+        try { localStorage.setItem('agri_isAuthenticated', 'true'); } catch {}
+        setCurrentUser(prev => {
+          const updated = {
+            ...(prev || {}),
+            name: fbUser.displayName || prev?.name || 'AgriConnect User',
+            email: fbUser.email || prev?.email || '',
+            uid: fbUser.uid,
+            role: prev?.role || 'farmer'
+          };
+          try { localStorage.setItem('agri_currentUser', JSON.stringify(updated)); } catch {}
+          return updated;
+        });
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Current language code: 'en' | 'hi' | 'pa' | 'mr' | 'te' | 'ta' | 'bn' | 'gu' | 'kn'
   const [langCode, setLangCode] = useState('en');
@@ -70,8 +116,30 @@ export const AppProvider = ({ children }) => {
     return translated || fallback || key;
   }, [langCode]);
 
-  // Farmer profile & parcels state
-  const [farmer, setFarmer] = useState(initialFarmerData);
+  // Farmer profile & parcels state — persisted to localStorage
+  const [farmer, setFarmer] = useState(() => {
+    try {
+      const saved = localStorage.getItem('agri_farmer');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (!parsed.avatarUrl || parsed.avatarUrl.includes('unsplash.com')) {
+          parsed.avatarUrl = '/farmer.png';
+        }
+        return parsed;
+      }
+      return initialFarmerData;
+    } catch { return initialFarmerData; }
+  });
+
+  // Sync currentUser to localStorage whenever it changes
+  useEffect(() => {
+    try { localStorage.setItem('agri_currentUser', JSON.stringify(currentUser)); } catch {}
+  }, [currentUser]);
+
+  // Sync farmer profile to localStorage whenever it changes
+  useEffect(() => {
+    try { localStorage.setItem('agri_farmer', JSON.stringify(farmer)); } catch {}
+  }, [farmer]);
 
   // Products state (farmer & buyer marketplace)
   const [products, setProducts] = useState(initialProducts);
@@ -100,6 +168,63 @@ export const AppProvider = ({ children }) => {
   // Schemes & Water Requests
   const [schemes, setSchemes] = useState(initialSchemes);
   const [waterRequests, setWaterRequests] = useState(initialWaterRequests);
+
+  // Live weather & market prices from backend (fall back to sensible defaults until loaded)
+  const [weather, setWeather] = useState(null);
+  const [marketPrices, setMarketPrices] = useState(null);
+  const [backendConnected, setBackendConnected] = useState(false);
+  const [weatherLocationInput, setWeatherLocationInput] = useState('');
+
+  // Fetches weather for a given city/place string (e.g. "Jaipur, Rajasthan").
+  // Also usable directly from the UI via a location search box.
+  const refreshWeather = useCallback((location) => {
+    return api.getWeather({ location })
+      .then((data) => { setWeather(data); return data; })
+      .catch((err) => {
+        console.warn('Falling back to mock weather:', err.message);
+        showToast('Could not find that location — showing fallback weather', 'error');
+      });
+  }, []);
+
+  // Pull live data from the backend on load. If the backend isn't running,
+  // everything silently keeps using the local mock data already set above.
+  useEffect(() => {
+    api.getHealth().then(() => setBackendConnected(true)).catch(() => setBackendConnected(false));
+
+    // Uses the farmer's district + state so weather matches whoever's logged in.
+    // Falls back to Ludhiana, Punjab if that's ever missing.
+    const defaultLocation = (farmer?.district && farmer?.state)
+      ? `${farmer.district.replace(/^District\s+/i, '')}, ${farmer.state}`
+      : 'Ludhiana, Punjab';
+    refreshWeather(defaultLocation);
+
+    api.getMarketPrices({ state: 'Punjab' }).then(setMarketPrices).catch((err) => {
+      console.warn('Falling back to mock market prices:', err.message);
+    });
+
+    api.getProducts().then((data) => { if (data?.length) setProducts(data); }).catch((err) => {
+      console.warn('Falling back to mock products:', err.message);
+    });
+
+    api.getSchemes().then((data) => { if (data?.length) setSchemes(data); }).catch((err) => {
+      console.warn('Falling back to mock schemes:', err.message);
+    });
+
+    api.getAlerts().then((data) => { if (data) setAlerts(data); }).catch((err) => {
+      console.warn('Falling back to mock alerts:', err.message);
+    });
+  }, []);
+
+  // AI crop recommendation (calls backend /api/crop-prediction, which uses
+  // mock scoring today and can be swapped for a real Python model later)
+  const predictCrop = useCallback(async (input) => {
+    try {
+      return await api.predictCrop(input);
+    } catch (err) {
+      showToast('Could not reach prediction service — is the backend running?', 'error');
+      throw err;
+    }
+  }, []);
 
   // Toast notifications
   const [toast, setToast] = useState(null);
@@ -357,46 +482,55 @@ export const AppProvider = ({ children }) => {
   }, [showToast]);
 
   // Auth handlers
-  const loginUser = useCallback(({ identifier, password, role: loginRole, rememberMe }) => {
+  const loginUser = useCallback(({ identifier, password, role: loginRole, name: customName, uid }) => {
     const targetRole = loginRole || 'farmer';
     setRole(targetRole);
     setIsAuthenticated(true);
+    try {
+      localStorage.setItem('agri_isAuthenticated', 'true');
+      localStorage.setItem('agri_role', targetRole);
+    } catch {}
 
     let userObj = {
-      name: 'Ramesh Kumar',
-      phone: identifier.includes('@') ? '+91 98765 43210' : identifier,
-      email: identifier.includes('@') ? identifier : 'farmer.ramesh@agriconnect.in',
+      uid: uid || null,
+      name: customName || (identifier?.includes('@') ? identifier.split('@')[0] : 'Ramesh Kumar'),
+      phone: identifier?.includes('@') ? '+91 98765 43210' : (identifier || '+91 98765 43210'),
+      email: identifier?.includes('@') ? identifier : 'farmer.ramesh@agriconnect.in',
       role: targetRole,
       location: 'Village Pratappur, Ludhiana, Punjab'
     };
 
     if (targetRole === 'buyer') {
       userObj = {
-        name: 'AgriCorp Traders',
-        phone: '+91 98765 22334',
-        email: 'procurement@agricorp.in',
+        uid: uid || null,
+        name: customName || 'AgriCorp Traders',
+        phone: identifier?.includes('@') ? '+91 98765 22334' : (identifier || '+91 98765 22334'),
+        email: identifier?.includes('@') ? identifier : 'procurement@agricorp.in',
         role: 'buyer',
         location: 'New Delhi Wholesale Mandi'
       };
     } else if (targetRole === 'authority') {
       userObj = {
-        name: 'Dr. Harvinder Singh',
-        phone: '+91 98765 99881',
-        email: 'officer.ludhiana@agri.gov.in',
+        uid: uid || null,
+        name: customName || 'Dr. Harvinder Singh',
+        phone: identifier?.includes('@') ? '+91 98765 99881' : (identifier || '+91 98765 99881'),
+        email: identifier?.includes('@') ? identifier : 'officer.ludhiana@agri.gov.in',
         role: 'authority',
         location: 'District Agriculture Office, Ludhiana'
       };
     } else if (targetRole === 'admin') {
       userObj = {
-        name: 'Suresh Singh (Admin)',
-        phone: '+91 99887 76655',
-        email: 'admin@agriconnect.in',
+        uid: uid || null,
+        name: customName || 'Suresh Singh (Admin)',
+        phone: identifier?.includes('@') ? '+91 99887 76655' : (identifier || '+91 99887 76655'),
+        email: identifier?.includes('@') ? identifier : 'admin@agriconnect.in',
         role: 'admin',
         location: 'State HQ Chandigarh'
       };
     }
 
     setCurrentUser(userObj);
+    try { localStorage.setItem('agri_currentUser', JSON.stringify(userObj)); } catch {}
     showToast(`Welcome back, ${userObj.name}! Logged in as ${targetRole.toUpperCase()}`, 'success');
     return userObj;
   }, [showToast]);
@@ -408,6 +542,7 @@ export const AppProvider = ({ children }) => {
       email,
       password,
       role: regRole = 'farmer',
+      uid = null,
       // Requested fields
       location = {},
       landSize = '5.0',
@@ -421,8 +556,13 @@ export const AppProvider = ({ children }) => {
     setRole(regRole);
     setIsAuthenticated(true);
     setLanguage(preferredLanguage);
+    try {
+      localStorage.setItem('agri_isAuthenticated', 'true');
+      localStorage.setItem('agri_role', regRole);
+    } catch {}
 
     const newUser = {
+      uid,
       name: name || 'New Agricultural Producer',
       phone: phone || '+91 98765 00000',
       email: email || 'farmer@agriconnect.in',
@@ -430,6 +570,7 @@ export const AppProvider = ({ children }) => {
       location: location.village ? `${location.village}, ${location.district || ''}, ${location.state || ''}` : (location.state || 'Punjab')
     };
     setCurrentUser(newUser);
+    try { localStorage.setItem('agri_currentUser', JSON.stringify(newUser)); } catch {}
 
     if (regRole === 'farmer') {
       setFarmer(prev => ({
@@ -461,7 +602,15 @@ export const AppProvider = ({ children }) => {
   }, [setLanguage, showToast]);
 
   const logoutUser = useCallback(() => {
+    signOut(auth).catch(() => {});
     setIsAuthenticated(false);
+    setCurrentUser(null);
+    setRole('farmer');
+    try {
+      localStorage.removeItem('agri_isAuthenticated');
+      localStorage.removeItem('agri_currentUser');
+      localStorage.removeItem('agri_role');
+    } catch {}
     showToast('You have been logged out safely.', 'info');
   }, [showToast]);
 
@@ -513,6 +662,11 @@ export const AppProvider = ({ children }) => {
         createOrder,
         schemes,
         waterRequests,
+        weather,
+        marketPrices,
+        backendConnected,
+        refreshWeather,
+        predictCrop,
         toast,
         showToast,
         isSpeaking,

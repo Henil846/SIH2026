@@ -4,7 +4,7 @@ export const initialFarmerData = {
   village: 'Village Pratappur',
   district: 'District Ludhiana',
   state: 'Punjab',
-  avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
+  avatarUrl: '/farmer.png',
   phone: '+91 98765 43210',
   secondaryPhone: '+91 87654 32109',
   preferredLanguage: 'English',

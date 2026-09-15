@@ -16,6 +16,9 @@ import {
   ArrowRight,
   ArrowLeft,
   Wheat,
+  ShoppingBag,
+  Building2,
+  ShieldCheck,
   Eye,
   EyeOff,
   Layers,
@@ -26,6 +29,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { Button } from '../../components/ui/Button';
 import { VoiceButton } from '../../components/ui/VoiceButton';
+import { auth, createUserWithEmailAndPassword, updateProfile } from '../../services/firebase';
 
 const ALL_CROPS_PRESETS = [
   { name: 'Wheat (गेहूं)', category: 'Rabi' },
@@ -71,17 +75,18 @@ export const RegisterPage = () => {
 
   const [activeStep, setActiveStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [customCropInput, setCustomCropInput] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Form State containing ALL 7 requested fields
   const [form, setForm] = useState({
     // Account details
-    fullName: 'Ramesh Kumar',
-    phone: '9876543210',
-    email: 'ramesh.farmer@agriconnect.in',
-    password: 'password123',
-    confirmPassword: 'password123',
+    fullName: '',
+    phone: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
     role: 'farmer',
 
     // 1. Location
@@ -158,10 +163,42 @@ export const RegisterPage = () => {
     }, 800);
   };
 
-  const handleSubmit = (e) => {
+  const handleProceedStep1 = () => {
+    if (!form.fullName || !form.fullName.trim()) {
+      showToast('Please enter your Full Name', 'error');
+      return;
+    }
+    if (!form.phone || form.phone.length < 10) {
+      showToast('Please enter a valid 10-digit mobile number', 'error');
+      return;
+    }
+    if (!form.password) {
+      showToast('Please create a password', 'error');
+      return;
+    }
+    if (form.password.length < 6) {
+      showToast('Password must be at least 6 characters long', 'error');
+      return;
+    }
+    if (form.password !== form.confirmPassword) {
+      showToast('Passwords do not match! Please verify your passwords', 'error');
+      return;
+    }
+    setActiveStep(2);
+  };
+
+  const handleSubmit = async (e) => {
     e?.preventDefault();
     if (!form.fullName || !form.phone) {
       showToast('Please fill in your name and phone number', 'error');
+      return;
+    }
+    if (form.password.length < 6) {
+      showToast('Password must be at least 6 characters long', 'error');
+      return;
+    }
+    if (form.password !== form.confirmPassword) {
+      showToast('Passwords do not match! Please verify your password', 'error');
       return;
     }
     if (form.crops.length === 0) {
@@ -170,14 +207,42 @@ export const RegisterPage = () => {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    const emailToRegister = form.email && form.email.trim() 
+      ? form.email.trim() 
+      : `${form.phone.replace(/\D/g, '')}@agriconnect.in`;
+
+    try {
+      let userUid = null;
+      try {
+        const userCred = await createUserWithEmailAndPassword(auth, emailToRegister, form.password);
+        if (userCred && userCred.user) {
+          userUid = userCred.user.uid;
+          await updateProfile(userCred.user, { displayName: form.fullName });
+        }
+      } catch (fbErr) {
+        console.error('Firebase Register Error:', fbErr);
+        if (fbErr.code === 'auth/email-already-in-use') {
+          showToast('This account (email/mobile) already exists. Please Sign In.', 'error');
+          setLoading(false);
+          return;
+        } else if (fbErr.code === 'auth/weak-password') {
+          showToast('Password is too weak. Please use at least 6 characters.', 'error');
+          setLoading(false);
+          return;
+        } else if (fbErr.code === 'auth/invalid-email') {
+          showToast('Please enter a valid email address.', 'error');
+          setLoading(false);
+          return;
+        }
+      }
+
       registerUser({
         name: form.fullName,
         phone: form.phone,
-        email: form.email,
+        email: form.email || emailToRegister,
         password: form.password,
         role: form.role,
+        uid: userUid,
         location: {
           village: form.locationVillage,
           district: form.locationDistrict,
@@ -193,9 +258,16 @@ export const RegisterPage = () => {
         preferredLanguage: form.preferredLanguage
       });
 
-      showToast('Farmer Profile & Farm Stewardship initialized successfully!', 'success');
-      navigate('/farmer/dashboard');
-    }, 700);
+      showToast('Farmer Profile & Password Authentication verified successfully!', 'success');
+      if (form.role === 'farmer') navigate('/farmer/dashboard');
+      else if (form.role === 'buyer') navigate('/buyer/marketplace');
+      else if (form.role === 'authority') navigate('/authority/dashboard');
+      else if (form.role === 'admin') navigate('/admin/dashboard');
+    } catch (err) {
+      showToast(err.message || 'Registration failed.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -337,7 +409,7 @@ export const RegisterPage = () => {
                     checked={form.role === 'farmer'}
                     onChange={() => setForm({ ...form, role: 'farmer' })}
                   />
-                  <Wheat size={24} className="reg-role-icon" />
+                  <Wheat size={24} className="reg-role-icon" color="#15803d" />
                   <div className="reg-role-info">
                     <span className="reg-role-name">{t('Farmer', 'Farmer / Producer')} (किसान)</span>
                     <span className="reg-role-desc">Cultivate crops, request water, access subsidies & sell harvest</span>
@@ -352,10 +424,40 @@ export const RegisterPage = () => {
                     checked={form.role === 'buyer'}
                     onChange={() => setForm({ ...form, role: 'buyer' })}
                   />
-                  <Tractor size={24} className="reg-role-icon" />
+                  <ShoppingBag size={24} className="reg-role-icon" color="#0369a1" />
                   <div className="reg-role-info">
                     <span className="reg-role-name">{t('Buyer', 'Agri Buyer / Trader')} (खरीदार)</span>
                     <span className="reg-role-desc">Procure bulk grains, vegetables, and certified produce directly</span>
+                  </div>
+                </label>
+
+                <label className={`reg-role-card ${form.role === 'authority' ? 'is-selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="role"
+                    value="authority"
+                    checked={form.role === 'authority'}
+                    onChange={() => setForm({ ...form, role: 'authority' })}
+                  />
+                  <Building2 size={24} className="reg-role-icon" color="#b45309" />
+                  <div className="reg-role-info">
+                    <span className="reg-role-name">{t('Authority', 'Govt Authority')} (कृषि अधिकारी)</span>
+                    <span className="reg-role-desc">Review certifications, issue alerts & manage water requests</span>
+                  </div>
+                </label>
+
+                <label className={`reg-role-card ${form.role === 'admin' ? 'is-selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="role"
+                    value="admin"
+                    checked={form.role === 'admin'}
+                    onChange={() => setForm({ ...form, role: 'admin' })}
+                  />
+                  <ShieldCheck size={24} className="reg-role-icon" color="#7c3aed" />
+                  <div className="reg-role-info">
+                    <span className="reg-role-name">{t('Admin', 'Platform Admin')} (प्रशासक)</span>
+                    <span className="reg-role-desc">Oversee user registrations, moderation & platform operations</span>
                   </div>
                 </label>
               </div>
@@ -393,20 +495,20 @@ export const RegisterPage = () => {
                 </div>
               </div>
 
+              <div className="form-group">
+                <label className="form-label">{t('Email Address (Optional)', 'Email Address (Optional for Notifications & Recovery)')}</label>
+                <input
+                  type="email"
+                  className="form-input"
+                  placeholder="e.g. farmer@example.com (or leave blank to use mobile)"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                />
+              </div>
+
               <div className="grid-2">
                 <div className="form-group">
-                  <label className="form-label">{t('Email Address (Optional)', 'Email Address (Optional)')}</label>
-                  <input
-                    type="email"
-                    className="form-input"
-                    placeholder="farmer@example.com"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">{t('Create Password', 'Create Password')} *</label>
+                  <label className="form-label">{t('Create Password', 'Create Password')} * (Min. 6 chars)</label>
                   <div className="form-control-wrapper">
                     <span className="input-leading-icon"><Lock size={16} /></span>
                     <input
@@ -426,6 +528,33 @@ export const RegisterPage = () => {
                     </button>
                   </div>
                 </div>
+
+                <div className="form-group">
+                  <label className="form-label">{t('Confirm Password', 'Confirm Password')} *</label>
+                  <div className="form-control-wrapper">
+                    <span className="input-leading-icon"><Lock size={16} /></span>
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      className="form-input has-leading-icon"
+                      placeholder="Re-enter password to verify"
+                      value={form.confirmPassword}
+                      onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="auth-eye-btn"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  {form.confirmPassword && (
+                    <div style={{ fontSize: '12px', marginTop: '4px', fontWeight: 600, color: form.password === form.confirmPassword ? '#15803d' : '#dc2626' }}>
+                      {form.password === form.confirmPassword ? '✓ Passwords match' : '✕ Passwords do not match'}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="reg-nav-footer">
@@ -436,7 +565,7 @@ export const RegisterPage = () => {
                   type="button"
                   variant="primary"
                   iconRight={ArrowRight}
-                  onClick={() => setActiveStep(2)}
+                  onClick={handleProceedStep1}
                 >
                   {t('Continue to Location & Land →', 'Continue to Location & Land →')}
                 </Button>

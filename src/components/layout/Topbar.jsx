@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Globe, Bell, Languages, ChevronDown, Check, Menu, LogIn } from 'lucide-react';
+import { Globe, Bell, Languages, ChevronDown, Check, Menu, LogOut } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Avatar } from '../ui/Avatar';
 
 export const Topbar = ({ title, simplified = false, showAvatar = true }) => {
   const {
+    role,
     langCode,
     currentLanguage,
     availableLanguages,
@@ -17,7 +18,8 @@ export const Topbar = ({ title, simplified = false, showAvatar = true }) => {
     showToast,
     toggleMobileMenu,
     isAuthenticated,
-    currentUser
+    currentUser,
+    logoutUser
   } = useApp();
 
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
@@ -44,6 +46,36 @@ export const Topbar = ({ title, simplified = false, showAvatar = true }) => {
     showToast(`Language switched to ${native} (${name})`, 'success');
   };
 
+  const getAlertsRoute = () => {
+    switch (role) {
+      case 'buyer':
+        return '/buyer/orders/AC-8492-MK';
+      case 'authority':
+        return '/authority/alerts/publish';
+      case 'admin':
+        return '/admin/monitoring';
+      case 'farmer':
+      default:
+        return '/farmer/alerts';
+    }
+  };
+
+  const getProfileRoute = () => {
+    switch (role) {
+      case 'buyer':
+        return '/buyer/marketplace';
+      case 'authority':
+        return '/authority/dashboard';
+      case 'admin':
+        return '/admin/users';
+      case 'farmer':
+      default:
+        return '/farmer/profile';
+    }
+  };
+
+  const displayName = currentUser?.name || (role === 'farmer' ? farmer.name : `${role.toUpperCase()} User`);
+
   return (
     <header className="topbar">
       <div className="topbar-left">
@@ -62,6 +94,22 @@ export const Topbar = ({ title, simplified = false, showAvatar = true }) => {
       </div>
 
       <div className="topbar-right">
+        {/* Active Role Badge */}
+        <span
+          style={{
+            fontSize: '11px',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
+            padding: '4px 10px',
+            borderRadius: '12px',
+            backgroundColor: role === 'farmer' ? '#dcfce7' : role === 'buyer' ? '#e0f2fe' : role === 'authority' ? '#fef3c7' : '#f3e8ff',
+            color: role === 'farmer' ? '#15803d' : role === 'buyer' ? '#0369a1' : role === 'authority' ? '#b45309' : '#7c3aed'
+          }}
+        >
+          {role}
+        </span>
+
         {/* Quick AgriTranslate Tool Button */}
         <button
           type="button"
@@ -125,7 +173,7 @@ export const Topbar = ({ title, simplified = false, showAvatar = true }) => {
 
         {/* Notifications / Alerts */}
         <Link
-          to="/farmer/alerts"
+          to={getAlertsRoute()}
           className="topbar-icon-btn"
           title="Alert Center"
           aria-label="Alerts"
@@ -136,9 +184,35 @@ export const Topbar = ({ title, simplified = false, showAvatar = true }) => {
 
         {/* Profile Avatar / Link */}
         {showAvatar && !simplified && (
-          <Link to="/farmer/profile" style={{ display: 'inline-flex' }} title={farmer.name}>
-            <Avatar src={farmer.avatarUrl} name={farmer.name} size="sm" />
+          <Link to={getProfileRoute()} style={{ display: 'inline-flex' }} title={displayName}>
+            <Avatar src={role === 'farmer' ? (farmer.avatarUrl || '/farmer.png') : undefined} name={displayName} size="sm" />
           </Link>
+        )}
+
+        {/* Log Out Button */}
+        {isAuthenticated && (
+          <button
+            type="button"
+            onClick={logoutUser}
+            className="topbar-logout-btn"
+            title="Sign Out"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: '#FEF2F2',
+              border: '1px solid #FECACA',
+              color: '#DC2626',
+              padding: '6px 10px',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            <LogOut size={14} />
+            <span>{t('Logout', 'Log Out')}</span>
+          </button>
         )}
       </div>
     </header>
